@@ -14,6 +14,9 @@ const SOCKET_URL =
 export const socket: Socket = io(SOCKET_URL, {
   autoConnect: true,
   transports: ['websocket', 'polling'],
+  extraHeaders: {
+    'bypass-tunnel-reminder': 'true',
+  },
 });
 
 const ROOM_STORAGE_KEY = 'housie_room_session';

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: housie-tambola-backend
+    env: node
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: CORS_ORIGIN
+        value: "*"
