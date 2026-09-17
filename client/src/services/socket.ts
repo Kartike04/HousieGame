@@ -2,7 +2,14 @@
 import { io, Socket } from 'socket.io-client';
 import { RoomState, Player, WinClaim, WinningCategory, RoomConfig } from '../types/game';
 
-const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL as string) || (window.location.hostname === 'localhost' ? 'http://localhost:4000' : '/');
+// Live public backend server URL fallback for Vercel deployment
+const LIVE_BACKEND_URL = 'https://sixty-months-return.loca.lt';
+
+const SOCKET_URL =
+  (import.meta.env.VITE_SOCKET_URL as string) ||
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:4000'
+    : LIVE_BACKEND_URL);
 
 export const socket: Socket = io(SOCKET_URL, {
   autoConnect: true,
