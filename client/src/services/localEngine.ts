@@ -54,7 +54,7 @@ class LocalEngine {
     this.toastListeners.forEach((fn) => fn({ type, message }));
   }
 
-  public createRoom(hostName: string, config?: Partial<RoomConfig>): { success: boolean; roomCode: string; playerId: string } {
+  public createRoom(hostName: string, config?: Partial<RoomConfig>): { success: boolean; roomCode: string; playerId: string; roomState?: RoomState } {
     const roomCode = this.generateRoomCode();
     const hostId = 'local_host_' + Math.random().toString(36).substring(2, 9);
 
@@ -108,7 +108,7 @@ class LocalEngine {
     };
 
     this.notifyState();
-    return { success: true, roomCode, playerId: hostId };
+    return { success: true, roomCode, playerId: hostId, roomState: this.roomState };
   }
 
   public joinRoom(roomCode: string, playerName: string): { success: boolean; roomState?: RoomState; playerId?: string; error?: string } {

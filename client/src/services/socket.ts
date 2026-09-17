@@ -51,7 +51,7 @@ export const clearSession = () => {
 };
 
 // Timeout wrapper for socket.emit acknowledgements so UI never hangs
-function emitWithTimeout<T>(eventName: string, payload: any, timeoutMs: number = 6000): Promise<T> {
+function emitWithTimeout<T>(eventName: string, payload: any, timeoutMs: number = 1500): Promise<T> {
   return new Promise((resolve) => {
     let resolved = false;
 

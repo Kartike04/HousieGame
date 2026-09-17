@@ -161,6 +161,9 @@ export const App: React.FC = () => {
 
     // LocalEngine fallback for 100% instant room creation
     const localRes = localEngine.createRoom(hostName, config);
+    if (localRes.roomState) {
+      setRoomState(localRes.roomState);
+    }
     setCurrentPlayerId(localRes.playerId);
     setIsCreateModalOpen(false);
     setView('GAME');
@@ -322,7 +325,9 @@ export const App: React.FC = () => {
     addToast('info', newState ? 'Sound enabled' : 'Sound muted');
   };
 
-  const currentPlayer = roomState?.players.find((p) => p.id === currentPlayerId);
+  const currentPlayer =
+    roomState?.players.find((p) => p.id === currentPlayerId) ||
+    (roomState?.players && roomState.players.length > 0 ? roomState.players[0] : undefined);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-amber-500 selection:text-slate-950 font-sans">
