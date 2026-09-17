@@ -16,6 +16,7 @@ import {
   getSession,
   clearSession,
 } from './services/socket';
+import { localEngine } from './services/localEngine';
 import { RoomState, WinClaim, ToastNotice, WinningCategory, RoomConfig } from './types/game';
 import { soundManager } from './utils/audio';
 
@@ -46,6 +47,33 @@ export const App: React.FC = () => {
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
+
+  // Subscribe to LocalEngine events
+  useEffect(() => {
+    const unsubState = localEngine.onState((state) => {
+      setRoomState(state);
+    });
+
+    const unsubDraw = localEngine.onDraw((data) => {
+      soundManager.playDrawSound();
+      soundManager.announceNumber(data.number);
+    });
+
+    const unsubWinner = localEngine.onWinner((claim) => {
+      setActiveWinnerClaim(claim);
+    });
+
+    const unsubToast = localEngine.onToast((data) => {
+      addToast(data.type, data.message);
+    });
+
+    return () => {
+      unsubState();
+      unsubDraw();
+      unsubWinner();
+      unsubToast();
+    };
+  }, []);
 
   // Auto session reconnect & Socket listener setup
   useEffect(() => {
@@ -118,65 +146,123 @@ export const App: React.FC = () => {
   // Action Handlers
   const handleCreateRoom = async (hostName: string, config: Partial<RoomConfig>) => {
     setIsLoading(true);
-    const res = await createRoomSocket(hostName, config);
-    setIsLoading(false);
 
-    if (res.success && res.roomCode && res.playerId) {
-      setCurrentPlayerId(res.playerId);
-      setIsCreateModalOpen(false);
-      setView('GAME');
-      addToast('success', `Room created! Room Code: ${res.roomCode}`);
-    } else {
-      addToast('error', res.error || 'Failed to create room.');
+    if (socket.connected) {
+      const res = await createRoomSocket(hostName, config);
+      if (res.success && res.roomCode && res.playerId) {
+        setCurrentPlayerId(res.playerId);
+        setIsCreateModalOpen(false);
+        setView('GAME');
+        setIsLoading(false);
+        addToast('success', `Room created! Room Code: ${res.roomCode}`);
+        return;
+      }
     }
+
+    // LocalEngine fallback for 100% instant room creation
+    const localRes = localEngine.createRoom(hostName, config);
+    setCurrentPlayerId(localRes.playerId);
+    setIsCreateModalOpen(false);
+    setView('GAME');
+    setIsLoading(false);
+    addToast('success', `Room created! Room Code: ${localRes.roomCode}`);
   };
 
   const handleJoinRoom = async (roomCode: string, playerName: string) => {
     setIsLoading(true);
-    const res = await joinRoomSocket(roomCode, playerName);
-    setIsLoading(false);
 
-    if (res.success && res.playerId && res.roomState) {
-      setCurrentPlayerId(res.playerId);
-      setRoomState(res.roomState);
+    if (socket.connected) {
+      const res = await joinRoomSocket(roomCode, playerName);
+      if (res.success && res.playerId && res.roomState) {
+        setCurrentPlayerId(res.playerId);
+        setRoomState(res.roomState);
+        setIsJoinModalOpen(false);
+        setView('GAME');
+        setIsLoading(false);
+        addToast('success', `Joined room ${roomCode}`);
+        return;
+      }
+    }
+
+    // LocalEngine fallback
+    const localRes = localEngine.joinRoom(roomCode, playerName);
+    if (localRes.success && localRes.playerId && localRes.roomState) {
+      setCurrentPlayerId(localRes.playerId);
+      setRoomState(localRes.roomState);
       setIsJoinModalOpen(false);
       setView('GAME');
+      setIsLoading(false);
       addToast('success', `Joined room ${roomCode}`);
     } else {
-      addToast('error', res.error || 'Failed to join room.');
+      setIsLoading(false);
+      addToast('error', localRes.error || 'Failed to join room.');
     }
   };
 
   const handleStartGame = () => {
-    socket.emit('start_game');
+    if (socket.connected) {
+      socket.emit('start_game');
+    } else {
+      localEngine.startGame();
+    }
   };
 
   const handlePauseGame = () => {
-    socket.emit('pause_game');
+    if (socket.connected) {
+      socket.emit('pause_game');
+    } else {
+      localEngine.pauseGame();
+    }
   };
 
   const handleResumeGame = () => {
-    socket.emit('resume_game');
+    if (socket.connected) {
+      socket.emit('resume_game');
+    } else {
+      localEngine.resumeGame();
+    }
   };
 
   const handleDrawManual = () => {
-    socket.emit('draw_next_manual');
+    if (socket.connected) {
+      socket.emit('draw_next_manual');
+    } else {
+      localEngine.drawNextNumber();
+    }
   };
 
   const handleChangeInterval = (newInterval: number) => {
-    socket.emit('change_interval', newInterval);
+    if (socket.connected) {
+      socket.emit('change_interval', newInterval);
+    }
   };
 
   const handleEndGame = () => {
-    socket.emit('end_game');
+    if (socket.connected) {
+      socket.emit('end_game');
+    } else {
+      localEngine.leaveRoom();
+      setRoomState(null);
+      setView('LANDING');
+    }
   };
 
   const handlePlayAgain = () => {
-    socket.emit('play_again');
+    if (socket.connected) {
+      socket.emit('play_again');
+    } else {
+      if (currentPlayer) {
+        handleCreateRoom(currentPlayer.name, roomState?.config || {});
+      }
+    }
   };
 
   const handleLeaveRoom = () => {
-    socket.emit('leave_room');
+    if (socket.connected) {
+      socket.emit('leave_room');
+    } else {
+      localEngine.leaveRoom();
+    }
     clearSession();
     setRoomState(null);
     setCurrentPlayerId(null);
@@ -185,11 +271,17 @@ export const App: React.FC = () => {
   };
 
   const handleKickPlayer = (targetPlayerId: string) => {
-    socket.emit('kick_player', targetPlayerId);
+    if (socket.connected) {
+      socket.emit('kick_player', targetPlayerId);
+    }
   };
 
   const handleMarkNumber = (num: number) => {
-    socket.emit('mark_number', { number: num });
+    if (socket.connected) {
+      socket.emit('mark_number', { number: num });
+    } else if (currentPlayerId) {
+      localEngine.markNumber(currentPlayerId, num);
+    }
   };
 
   const handleInvalidMarkAttempt = (num: number) => {
@@ -198,13 +290,29 @@ export const App: React.FC = () => {
 
   const handleClaimWin = async (category: WinningCategory, ticketIndex?: number) => {
     setIsClaiming(true);
-    const res = await claimWinSocket(category, ticketIndex);
-    setIsClaiming(false);
 
-    if (res.success) {
-      addToast('success', res.message);
+    if (socket.connected) {
+      const res = await claimWinSocket(category, ticketIndex);
+      setIsClaiming(false);
+      if (res.success) {
+        addToast('success', res.message);
+      } else {
+        setBogusMemeMessage(res.message);
+      }
+      return;
+    }
+
+    // LocalEngine claim
+    if (currentPlayerId) {
+      const localRes = localEngine.claimWin(currentPlayerId, category, ticketIndex || 0);
+      setIsClaiming(false);
+      if (localRes.success) {
+        addToast('success', localRes.message);
+      } else {
+        setBogusMemeMessage(localRes.message);
+      }
     } else {
-      setBogusMemeMessage(res.message);
+      setIsClaiming(false);
     }
   };
 
