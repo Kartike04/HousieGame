@@ -16,6 +16,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onCreateClick, onJoinC
 
       {/* Main Container */}
       <div className="w-full max-w-4xl mx-auto flex flex-col items-center text-center my-auto z-10 py-12">
+        {/* 3D Game Logo Display */}
+        <div className="relative mb-6 group">
+          <img
+            src="/logo.jpg"
+            alt="Housie Tambola Game Logo"
+            className="w-28 h-28 md:w-36 md:h-36 rounded-3xl object-cover shadow-2xl border-2 border-amber-400/60 transition-transform duration-300 group-hover:scale-105"
+          />
+          <div className="absolute inset-0 rounded-3xl bg-amber-400/20 blur-xl -z-10 animate-pulse" />
+        </div>
+
         {/* Animated Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel-gold text-amber-400 font-semibold text-sm mb-6 border border-amber-500/30 shadow-lg animate-pulse-glow">
           <Zap className="w-4 h-4 text-amber-400" />
@@ -24,12 +34,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onCreateClick, onJoinC
 
         {/* Title & Subtitle */}
         <div className="space-y-4 mb-8">
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-6xl md:text-7xl filter drop-shadow-lg">🎟️</span>
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 via-rose-400 to-purple-400 bg-clip-text text-transparent">
-              HOUSIE
-            </h1>
-          </div>
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 via-rose-400 to-purple-400 bg-clip-text text-transparent">
+            HOUSIE TAMBOLA
+          </h1>
           <p className="text-xl md:text-2xl font-medium text-slate-300">
             Play Tambola with Friends
           </p>
@@ -85,7 +92,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onCreateClick, onJoinC
             </div>
             <h3 className="text-lg font-bold text-white mb-1">Smart Housie Tickets</h3>
             <p className="text-sm text-slate-400">
-              Auto-generated 3×9 tickets following standard Tambola column rules with instant marking.
+              Auto-generated 3×9 tickets with 100% unique numbers per ticket and instant marking.
             </p>
           </div>
         </div>
@@ -93,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onCreateClick, onJoinC
 
       {/* Footer */}
       <footer className="w-full text-center py-4 text-xs text-slate-500 z-10 border-t border-slate-900">
-        🎟️ Housie Real-Time &bull; Powered by Express, Socket.IO & React
+        🎟️ Housie Tambola Real-Time &bull; Powered by Express, Socket.IO & React
       </footer>
     </div>
   );
